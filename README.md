@@ -1,1 +1,2 @@
-# gh-action-tox
+# tox Github Action
+Allows running tox from Github Action.
