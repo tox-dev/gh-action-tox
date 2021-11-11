@@ -1,0 +1,284 @@
+---
+
+name: tox
+
+on:
+  workflow_call:
+    inputs:
+      target:
+        default:
+        description: Regex to filter the tox envs, required with 'run-env'
+        required: false
+        type: string
+
+      min-python:
+        default: 'None'
+        description: Minimum supported Python version (quote as a string!)
+        required: false
+        type: string
+      max-python:
+        default: 'None'
+        description: Maximum supported Python version (quote as a string!)
+        required: false
+        type: string
+
+      version:
+        default: tox
+        description: tox with version spec for pip
+        required: false
+        type: string
+    secrets: {}
+
+jobs:
+  make-tox-env-matrix:
+    name: >-
+      tox: discover envs
+
+    outputs:
+      matrix: ${{ steps.tox.outputs.matrix }}
+
+    runs-on: Ubuntu-latest
+
+    steps:
+    - name: Install packaging tools
+      run: |
+        echo '::group::Preparing the outer Python env for tox'
+        python -m pip install --user -U wheel
+        python -m pip install --user -U pip-with-requires-python setuptools
+        python -m pip install --user -U virtualenv
+        echo '::endgroup::'
+      shell: bash
+    - name: Install tox
+      run: |
+        echo '::group::Installing tox: ${{ inputs.version }}'
+        python -m pip install --user -U '${{ inputs.version }}'
+        echo '::endgroup::'
+      shell: bash
+
+    # NOTE: Check out the caller repository under $GITHUB_WORKSPACE,
+    # NOTE: so the job can access it.
+    - uses: actions/checkout@v2
+
+    - name: Generate the matrix
+      id: tox
+      run: |
+        from __future__ import print_function
+
+        __metaclass__ = type
+
+
+        import json
+        import re
+        import subprocess
+        import sys
+
+
+        print('::group::Generating GHA environments based on tox config')
+        filter_pattern = '${{ matrix.toxenv }}'
+
+        min_py_ver = ${{ inputs.min-python }}
+        max_py_ver = ${{ inputs.max-python }}
+        if min_py_ver is not None:
+          min_py_ver = tuple(map(int, str(min_py_ver).split('.')))
+        else:
+          min_py_ver = 2, 7
+        if max_py_ver is not None:
+          max_py_ver = tuple(map(int, str(max_py_ver).split('.')))
+        else:
+          max_py_ver = 3, 10
+
+        def inc_minor_py_ver(ver):
+            if ver == (2, 7):
+                return 3, 5
+            return ver[0], ver[1] + 1
+
+        def generate_py_vers(min_py, max_py):
+            cur_ver = min_py
+            while cur_ver <= max_py:
+                yield cur_ver
+                cur_ver = inc_minor_py_ver(cur_ver)
+
+        tox_discovery_cmd = sys.executable, '-m', 'tox', '-a'
+        toxenvs = set(subprocess.check_output(
+            tox_discovery_cmd,
+            universal_newlines=True,
+        ).splitlines())
+        if {'py', 'python'} & toxenvs:
+            toxenvs -= {'py', 'python'}
+            for py_ver in generate_py_vers(min_py_ver, max_py_ver):
+                toxenvs |= {'py{ver[0]}{ver[1]}'.format(ver=py_ver)}
+
+        envs = []
+        for toxenv in toxenvs:
+            if filter_pattern and not re.search(filter_pattern, toxenv):
+                print(
+                    '`{env}` does not march `{pattern}`. Excluding it...'.
+                    format(env=toxenv, pattern=filter_pattern),
+                )
+                continue
+
+            print('Adding `{env}` to the list'.format(env=toxenv))
+            py_ver = (
+                (toxenv[2], toxenv[3:]) if toxenv.startswith('py')
+                else max_py_ver
+            )
+            envs.append({
+                'name': 'tox: {env}'.format(env=toxenv),
+                'python-version': '.'.join(py_ver),
+                'toxenv': toxenv,
+            })
+
+        matrix_json_string = json.dumps({'include': envs})
+        print(
+            '::set-output name=matrix::{out_json}'.
+            format(out_json=matrix_json_string),
+        )
+        print('::endgroup::')
+      shell: python
+
+    - name: Log the discovered matrix
+      run: echo '${{ steps.tox.outputs.matrix }}'
+
+
+  run-tox:
+    name: ${{ matrix.name }}
+
+    needs:
+    - make-tox-env-matrix
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix: ${{ fromJSON(needs.make-tox-env-matrix.outputs.matrix) }}
+
+    steps:
+    - uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install packaging tools
+      run: |
+        echo '::group::Preparing the outer Python env for tox'
+        python -m pip install --user -U wheel
+        python -m pip install --user -U pip-with-requires-python setuptools
+        python -m pip install --user -U virtualenv
+        echo '::endgroup::'
+      shell: bash
+    - name: Install tox
+      run: |
+        echo '::group::Installing tox: ${{ inputs.version }}'
+        python -m pip install --user -U '${{ inputs.version }}'
+        echo '::endgroup::'
+      shell: bash
+    - uses: actions/checkout@v2
+    - name: Prepare tox env '${{ matrix.toxenv }}'
+      run: >
+        echo '::group::Preparing tox environment'
+
+
+        python -m
+        tox
+        --parallel auto
+        --parallel-live
+        -vv
+        --notest
+
+
+        echo '::endgroup::'
+      shell: bash
+      env:
+        PY_COLORS: 1
+        TOX_PARALLEL_NO_SPINNER: 1
+        TOXENV: ${{ matrix.toxenv }}
+    - name: Run tox env '${{ matrix.toxenv }}'
+      id: tox-results
+      run: |
+        echo '::group::Executing tox environment commands'
+
+        TMPDIR=$(mktemp -d --suffix=-results tox-XXXXX)
+
+        JSON_RESULTS_FILE="${TMPDIR}/.tox-run-results.json" && \
+          echo "::set-output name=results-file::${JSON_RESULTS_FILE}"
+
+        python -m \
+          tox \
+          --parallel auto \
+          --parallel-live \
+          -vv \
+          --result-json "${JSON_RESULTS_FILE}"
+
+        echo '::endgroup::'
+      shell: bash
+      env:
+        PY_COLORS: 1
+        TOX_PARALLEL_NO_SPINNER: 1
+        TOXENV: ${{ matrix.toxenv }}
+    - uses: actions/setup-python@v2
+      if: always()
+      with:
+        python-version: '3.10'
+    - name: t res
+      if: always()
+      run: python3.10 -m json.tool '${{ steps.tox-results.outputs.results-file }}'
+    - name: Log results
+      if: always()
+      id: json-results
+      run: |
+        import json
+        from shutil import rmtree
+        from pathlib import Path
+        from pprint import pprint
+
+        print('::group::Saving json results...')
+
+        results_file = Path('${{ steps.tox-results.outputs.results-file }}')
+        tox_results = json.loads(results_file.read_text())
+        compact_tox_results = json.dumps(tox_results, indent=None)
+
+        print(f'::set-output name=json-results::{compact_tox_results}')
+
+        toxenv_data = tox_results['testenvs']['${{ matrix.toxenv }}']
+        test_commands = toxenv_data['test']
+
+        for test_cmd in test_commands:
+            pprint(test_cmd)
+
+            rc = test_cmd['retcode']
+            if rc:
+                print(
+                    '::error file=({rc}) $ {cmd}::{out}'.
+                    format(
+                        rc=rc,
+                        cmd=' '.join(test_cmd['command']),
+                        out=test_cmd['output'].replace('\n', '%0A'),
+                    )
+                )
+                continue
+
+            test_cmd_out = test_cmd['output'].replace('\n', '%0A')
+            print(f'::debug:({rc}) $ {" ".join(test_cmd["command"])}')
+            print(f'::debug:{test_cmd_out}')
+
+        rmtree((results_file / '..').resolve())
+
+        print('::endgroup::')
+      shell: python
+
+    - name: j res
+      if: always()
+      run: echo '${{ steps.json-results.outputs.json-results }}' | python3.10 -m json.tool
+
+  check-tox:  # This job does nothing and is only used for the branch protection
+    if: always()
+
+    needs:
+    - run-tox
+
+    runs-on: Ubuntu-latest
+
+    steps:
+    - name: Decide whether the needed jobs succeeded or failed
+      uses: re-actors/alls-green@release/v1
+      with:
+        jobs: ${{ toJSON(needs) }}
+
+...
