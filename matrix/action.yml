@@ -46,6 +46,13 @@ runs:
         3.10
   - name: Install packaging tools
     run: |
+      set -x
+      echo "${PY_COLORS}"
+      echo "${TOX_PARALLEL_NO_SPINNER}"
+      env
+    shell: bash
+  - name: Install packaging tools
+    run: |
       echo '::group::Preparing the outer Python env for tox'
       python -m pip install --user -U wheel
       python -m pip install --user -U pip-with-requires-python setuptools
