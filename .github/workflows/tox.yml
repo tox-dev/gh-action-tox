@@ -64,7 +64,8 @@ jobs:
     # NOTE: so the job can access it.
     - uses: actions/checkout@v2
 
-    - uses: tox-dev/gh-action-tox/matrix@experiments/composite-action
+    - name: 🔎 Produce tox environment job matrix for GHA
+      uses: tox-dev/gh-action-tox/matrix@experiments/composite-action
       id: discovered-tox
 
     - name: Log the discovered matrix
@@ -85,7 +86,9 @@ jobs:
       matrix: ${{ fromJSON(needs.make-tox-env-matrix.outputs.matrix) }}
 
     steps:
-    - uses: tox-dev/gh-action-tox@experiments/composite-action
+    - name: >-
+        🧪 Run tox: ${{ matrix.toxenv }}
+      uses: tox-dev/gh-action-tox@experiments/composite-action
       with:
         python-version: ${{ matrix.python-version }}
         target: ${{ matrix.toxenv }}
