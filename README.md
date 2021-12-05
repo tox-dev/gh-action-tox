@@ -46,6 +46,6 @@ jobs:
 
 ## Features
 
-The reusable workflow has a job called `check-tox` that waits for the
+The reusable workflow has a job called `✅ check-tox` that waits for the
 whole tox matrix. It can be used in the branch protection to avoid
 having to list each of the dynamic check names.

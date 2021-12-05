@@ -7,7 +7,7 @@ on:
     inputs:
 
       check-job-name:
-        default: check-tox
+        default: ✅ check-tox
         description: >-
           A custom job name to use in branch protection,
           defaults to 'check-tox'
