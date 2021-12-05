@@ -34,6 +34,9 @@ outputs:
     value: ${{ steps.tox-matrix.outputs.matrix }}
 
 runs:
+  env:
+    PY_COLORS: 1
+    TOX_PARALLEL_NO_SPINNER: 1
   using: composite
   steps:
   - uses: actions/setup-python@v2
