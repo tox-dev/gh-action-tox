@@ -114,7 +114,6 @@ runs:
               else max_py_ver
           )
           envs.append({
-              'name': 'tox: {env}'.format(env=toxenv),
               'python-version': '.'.join(py_ver),
               'toxenv': toxenv,
           })
