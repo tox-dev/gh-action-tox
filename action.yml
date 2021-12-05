@@ -13,14 +13,11 @@ inputs:
     description: Regex to filter the tox envs, required
     required: false
 
-  min-python:
-    default: 'None'
-    description: Minimum supported Python version (quote as a string!)
-    required: false
-  max-python:
-    default: 'None'
-    description: Maximum supported Python version (quote as a string!)
-    required: false
+  python-version:
+    default: >-
+      3.10
+    description: Python version to use as the current tox runtime
+    required: true
 
   version:
     default: tox
@@ -31,11 +28,17 @@ outputs:
   matrix:
     value: ${{ steps.tox-matrix.outputs.matrix }}
   json-results:
-    value: ${{ steps.tox-results.outputs.json-results }}
+    value: ${{ steps.json-results.outputs.json-results }}
 
 runs:
   using: composite
   steps:
+  # TODO: integrate deadsnakes?
+  - name: Set the active Python interpeter to ${{ inputs.python-version }}
+    uses: actions/setup-python@v2
+    with:
+      python-version: ${{ inputs.python-version }}
+  # TODO: integrate bindep?
   - name: Install packaging tools
     run: |
       echo '::group::Preparing the outer Python env for tox'
@@ -50,6 +53,7 @@ runs:
       python -m pip install --user -U '${{ inputs.version }}'
       echo '::endgroup::'
     shell: bash
+  - uses: actions/checkout@v2
   - name: Prepare tox env '${{ inputs.target }}'
     run: >
       echo '::group::Preparing tox environment'
@@ -69,45 +73,126 @@ runs:
       PY_COLORS: 1
       TOX_PARALLEL_NO_SPINNER: 1
       TOXENV: ${{ inputs.target }}
-  - name: Run tox env '${{ inputs.target }}'
+  - name: Prepare tox results directory for '${{ inputs.target }}'
     id: tox-results
-    run: |
+    run: >
+      echo '::group::Preparing tox results storage...'
+
+
+      TMPDIR=$(
+        mktemp -d --suffix=-results "${GITHUB_ACTION_PATH}/tox-XXXXX"
+      )
+      && echo "::set-output name=results-dir::${TMPDIR}"
+
+
+      JSON_RESULTS_FILE="${TMPDIR}/.tox-run-results.json"
+      && echo "::set-output name=results-file::${JSON_RESULTS_FILE}"
+
+
+      echo '::endgroup::'
+    shell: bash
+  - name: Run tox env '${{ inputs.target }}'
+    run: >
       echo '::group::Executing tox environment commands'
 
-      function set_out() {
-          echo Saving json results...
 
-          # NOTE: `json.tool` does not work because old pythons have no compact
-          # cat "${JSON_RESULTS_FILE}" | python -m json.tool --compact
-          JSON_RESULTS="$(awk -v RS= '{$1=$1}1' "${JSON_RESULTS_FILE}")" && \
-          echo "::set-output name=json-results::${JSON_RESULTS}"
+      python -m
+      tox
+      --parallel auto
+      --parallel-live
+      -vv
+      --result-json '${{ steps.tox-results.outputs.results-file }}'
 
-          PYTHONPATH="${GITHUB_ACTION_PATH}" python -m \
-            inspect_tox_results "${JSON_RESULTS_FILE}" '${{ inputs.target }}'
 
-          rm -rfv "${TMPDIR}"
-
-          echo '::endgroup::'
-      }
-
-      TMPDIR=$(mktemp -d --suffix=-results tox-XXXXX)
-
-      JSON_RESULTS_FILE="${TMPDIR}/.tox-run-results.json" && \
-        echo "::set-output name=results-file::${JSON_RESULTS_FILE}"
-
-      trap set_out EXIT QUIT TERM INT
-
-      python -m \
-        tox \
-        --parallel auto \
-        --parallel-live \
-        -vv \
-        --result-json "${JSON_RESULTS_FILE}"
+      echo '::endgroup::'
     shell: bash
     env:
       PY_COLORS: 1
       TOX_PARALLEL_NO_SPINNER: 1
       TOXENV: ${{ inputs.target }}
+  - uses: actions/setup-python@v2
+    if: always()
+    with:
+      python-version: '3.10'
+  - name: Save JSON results
+    if: always()
+    id: json-results
+    run: |
+      import json
+      from pathlib import Path
+
+      print('::group::Saving json results...')
+
+      results_file = Path('${{ steps.tox-results.outputs.results-file }}')
+      tox_results = json.loads(results_file.read_text())
+      compact_tox_results = json.dumps(tox_results, indent=None)
+
+      print(f'::set-output name=json-results::{compact_tox_results}')
+
+      print('::endgroup::')
+    shell: python
+    # TODO: move clean-up to a subaction?
+    # Ref: https://github.com/actions/runner/issues/1478#issuecomment-975703207
+  - name: >-
+      Clean-up the results directory at ${{ steps.tox-results.outputs.results-dir }}
+    if: always()
+    run: |
+      from shutil import rmtree
+      from pathlib import Path
+
+      results_dir = Path('${{ steps.tox-results.outputs.results-dir }}')
+      group_name = f'Cleaning up the `{results_dir!s}` results directory...'
+
+      print(f'::group::{group_name}')
+      try:
+          rmtree(results_dir)
+      except:
+          print('❌ Failure :(')
+      else:
+          print('🔥 Success!')
+      finally:
+          print('::endgroup::')
+    shell: python
+  - name: Log results
+    if: always()
+    run: |
+      import json
+      from pprint import pprint
+
+      print('::group::Printing json results...')
+
+      tox_results = json.loads(
+          """${{ steps.json-results.outputs.json-results }}""".
+          replace('\n', '%0A'),
+      )
+      toxenv_data = tox_results['testenvs']["""${{ matrix.toxenv }}"""]
+      test_commands = toxenv_data['test']
+
+      for test_cmd in test_commands:
+          pprint(test_cmd)
+
+          rc = test_cmd['retcode']
+          if rc:
+              print(
+                  '::error file=({rc}) $ {cmd}::{out}'.
+                  format(
+                      rc=rc,
+                      cmd=' '.join(test_cmd['command']),
+                      out=test_cmd['output'].replace('\n', '%0A'),
+                  )
+              )
+              continue
+
+          test_cmd_out = test_cmd['output'].replace('\n', '%0A')
+          print(f'::debug:({rc}) $ {" ".join(test_cmd["command"])}')
+          print(f'::debug:{test_cmd_out}')
+
+      print('::endgroup::')
+    shell: python
+  - name: Reset the active Python interpeter to ${{ inputs.python-version }}
+    uses: actions/setup-python@v2
+    with:
+      python-version: ${{ inputs.python-version }}
 
 
   # Global env seems to only be supported in docker actions but not composite
