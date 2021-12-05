@@ -33,6 +33,10 @@ outputs:
   matrix:
     value: ${{ steps.tox-matrix.outputs.matrix }}
 
+env:
+  PY_COLORS: 1
+  TOX_PARALLEL_NO_SPINNER: 1
+
 runs:
   using: composite
   steps:
@@ -129,8 +133,4 @@ runs:
       )
       print('::endgroup::')
     shell: python
-
-  env:
-    PY_COLORS: 1
-    TOX_PARALLEL_NO_SPINNER: 1
 ...
