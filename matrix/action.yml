@@ -33,10 +33,6 @@ outputs:
   matrix:
     value: ${{ steps.tox-matrix.outputs.matrix }}
 
-env:
-  PY_COLORS: 1
-  TOX_PARALLEL_NO_SPINNER: 1
-
 runs:
   using: composite
   steps:
@@ -44,13 +40,6 @@ runs:
     with:
       python-version: >-
         3.10
-  - name: Install packaging tools
-    run: |
-      set -x
-      echo "${PY_COLORS}"
-      echo "${TOX_PARALLEL_NO_SPINNER}"
-      env
-    shell: bash
   - name: Install packaging tools
     run: |
       echo '::group::Preparing the outer Python env for tox'
@@ -67,6 +56,9 @@ runs:
     shell: bash
   - name: Generate the matrix
     id: tox-matrix
+    env:
+      PY_COLORS: 1
+      TOX_PARALLEL_NO_SPINNER: 1
     run: |
       from __future__ import print_function
 
