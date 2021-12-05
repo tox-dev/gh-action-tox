@@ -1,0 +1,129 @@
+---
+name: tox-matrix-discovery
+description: >-
+  Discover tox-managed env matrix and output it as GHA-compatible JSON.
+author: >-
+  Sviatoslav Sydorenko <wk+~gh/tox-dev/gh-action-tox@sydorenko.org.ua>
+
+branding:
+  icon: code
+  color: blue
+
+inputs:
+  target:
+    default:
+    description: Regex to filter the tox envs
+    required: false
+
+  min-python:
+    default: 'None'
+    description: Minimum supported Python version (quote as a string!)
+    required: false
+  max-python:
+    default: 'None'
+    description: Maximum supported Python version (quote as a string!)
+    required: false
+
+  version:
+    default: tox
+    description: tox with version spec for pip
+    required: false
+
+outputs:
+  matrix:
+    value: ${{ steps.tox-matrix.outputs.matrix }}
+
+runs:
+  using: composite
+  steps:
+  - name: Install packaging tools
+    run: |
+      echo '::group::Preparing the outer Python env for tox'
+      python -m pip install --user -U wheel
+      python -m pip install --user -U pip-with-requires-python setuptools
+      python -m pip install --user -U virtualenv
+      echo '::endgroup::'
+    shell: bash
+  - name: Install tox
+    run: |
+      echo '::group::Installing tox: ${{ inputs.version }}'
+      python -m pip install --user -U '${{ inputs.version }}'
+      echo '::endgroup::'
+    shell: bash
+  - name: Generate the matrix
+    id: tox-matrix
+    run: |
+      from __future__ import print_function
+
+      __metaclass__ = type
+
+
+      import json
+      import re
+      import subprocess
+      import sys
+
+
+      print('::group::Generating GHA environments based on tox config')
+      filter_pattern = '${{ inputs.target }}'
+
+      min_py_ver = ${{ inputs.min-python }}
+      max_py_ver = ${{ inputs.max-python }}
+      if min_py_ver is not None:
+        min_py_ver = tuple(map(int, str(min_py_ver).split('.')))
+      else:
+        min_py_ver = 2, 7
+      if max_py_ver is not None:
+        max_py_ver = tuple(map(int, str(max_py_ver).split('.')))
+      else:
+        max_py_ver = 3, 10
+
+      def inc_minor_py_ver(ver):
+          if ver == (2, 7):
+              return 3, 5
+          return ver[0], ver[1] + 1
+
+      def generate_py_vers(min_py, max_py):
+          cur_ver = min_py
+          while cur_ver <= max_py:
+              yield cur_ver
+              cur_ver = inc_minor_py_ver(cur_ver)
+
+      tox_discovery_cmd = sys.executable, '-m', 'tox', '-a'
+      toxenvs = set(subprocess.check_output(
+          tox_discovery_cmd,
+          universal_newlines=True,
+      ).splitlines())
+      if {'py', 'python'} & toxenvs:
+          toxenvs -= {'py', 'python'}
+          for py_ver in generate_py_vers(min_py_ver, max_py_ver):
+              toxenvs |= {'py{ver[0]}{ver[1]}'.format(ver=py_ver)}
+
+      envs = []
+      for toxenv in toxenvs:
+          if filter_pattern and not re.search(filter_pattern, toxenv):
+              print(
+                  '`{env}` does not march `{pattern}`. Excluding it...'.
+                  format(env=toxenv, pattern=filter_pattern),
+              )
+              continue
+
+          print('Adding `{env}` to the list'.format(env=toxenv))
+          py_ver = (
+              (toxenv[2], toxenv[3:]) if toxenv.startswith('py')
+              else max_py_ver
+          )
+          envs.append({
+              'name': 'tox: {env}'.format(env=toxenv),
+              'python-version': '.'.join(py_ver),
+              'toxenv': toxenv,
+          })
+
+      matrix_json_string = json.dumps({'include': envs})
+      print(
+          '::set-output name=matrix::{out_json}'.
+          format(out_json=matrix_json_string),
+      )
+      print('::endgroup::')
+    shell: python
+...
