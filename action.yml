@@ -153,6 +153,20 @@ runs:
       finally:
           print('::endgroup::')
     shell: python
+  - name: Log results (subscript?)
+    env:
+      PYTHONPATH: ${{ github.action_path }}/src
+    run: |
+      python -m inspect_tox_results \
+      "$(cat << EOM
+        ${{ steps.json-results.outputs.json-results }}
+      EOM
+      )" \
+      "$(cat << EOM
+        ${{ matrix.toxenv }}
+      EOM
+      )"
+    shell: bash
   - name: Log results
     if: always()
     run: |
