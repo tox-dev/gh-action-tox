@@ -153,7 +153,8 @@ runs:
       finally:
           print('::endgroup::')
     shell: python
-  - name: Log results (subscript?)
+  - name: Log results
+    if: always()
     env:
       PYTHONPATH: ${{ github.action_path }}/src
     run: |
@@ -167,42 +168,6 @@ runs:
       EOM
       )"
     shell: bash
-  - name: Log results
-    if: always()
-    run: |
-      import json
-      from pprint import pprint
-
-      print('::group::Printing json results...')
-
-      tox_results = json.loads(
-          """${{ steps.json-results.outputs.json-results }}""".
-          replace('\n', '%0A'),
-      )
-      toxenv_data = tox_results['testenvs']["""${{ matrix.toxenv }}"""]
-      test_commands = toxenv_data['test']
-
-      for test_cmd in test_commands:
-          pprint(test_cmd)
-
-          rc = test_cmd['retcode']
-          if rc:
-              print(
-                  '::error file=({rc}) $ {cmd}::{out}'.
-                  format(
-                      rc=rc,
-                      cmd=' '.join(test_cmd['command']),
-                      out=test_cmd['output'].replace('\n', '%0A'),
-                  )
-              )
-              continue
-
-          test_cmd_out = test_cmd['output'].replace('\n', '%0A')
-          print(f'::debug:({rc}) $ {" ".join(test_cmd["command"])}')
-          print(f'::debug:{test_cmd_out}')
-
-      print('::endgroup::')
-    shell: python
   - name: Reset the active Python interpeter to ${{ inputs.python-version }}
     uses: actions/setup-python@v2
     with:
