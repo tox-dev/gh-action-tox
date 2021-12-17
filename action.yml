@@ -19,6 +19,13 @@ inputs:
     description: Python version to use as the current tox runtime
     required: true
 
+  deadsnakes:
+    default: false
+    description: >-
+      Install Python from the deadsnakes repository if true,
+      use a GitHub-packaged distribution otherwise
+    required: false
+
   version:
     default: tox
     description: tox with version spec for pip
@@ -33,9 +40,30 @@ outputs:
 runs:
   using: composite
   steps:
-  # TODO: integrate deadsnakes?
-  - name: Set the active Python interpeter to ${{ inputs.python-version }}
+  - name: >-
+      Set the active Python interpeter to ${{ inputs.python-version }}
+      from GitHub-provided repositories
+    if: >-
+      (
+        !(
+          fromJSON(inputs.deadsnakes)
+          || endsWith(inputs.python-version, '-dev')
+        )
+        || runner.os != 'Linux'
+      )
     uses: actions/setup-python@v2
+    with:
+      python-version: ${{ inputs.python-version }}
+  - name:
+      Set the active Python interpeter to ${{ inputs.python-version }}
+      from the deadsnakes Ubuntu PPA repositories
+    if: >-
+      (
+        fromJSON(inputs.deadsnakes)
+        || endsWith(inputs.python-version, '-dev')
+      )
+      && runner.os == 'Linux'
+    uses: deadsnakes/action@v2.1.1
     with:
       python-version: ${{ inputs.python-version }}
   # TODO: integrate bindep?
