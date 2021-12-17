@@ -114,7 +114,7 @@ jobs:
   run-tox:
     name: >-
       ${{ inputs.tox-job-names-prefix }}
-      ${{ matrix.toxenv }}
+      ${{ matrix.custom-job-name && matrix.custom-job-name  || matrix.toxenv }}
 
     needs:
     - make-tox-env-matrix
