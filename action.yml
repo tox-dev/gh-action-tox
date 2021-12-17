@@ -117,42 +117,23 @@ runs:
   - name: Save JSON results
     if: always()
     id: json-results
-    run: |
-      import json
-      from pathlib import Path
-
-      print('::group::Saving json results...')
-
-      results_file = Path('${{ steps.tox-results.outputs.results-file }}')
-      tox_results = json.loads(results_file.read_text())
-      compact_tox_results = json.dumps(tox_results, indent=None)
-
-      print(f'::set-output name=json-results::{compact_tox_results}')
-
-      print('::endgroup::')
-    shell: python
+    env:
+      PYTHONPATH: ${{ github.action_path }}/src
+    run: >-
+      python -m save_tox_results_as_output
+      '${{ steps.tox-results.outputs.results-file }}'
+    shell: bash
     # TODO: move clean-up to a subaction?
     # Ref: https://github.com/actions/runner/issues/1478#issuecomment-975703207
   - name: >-
       Clean-up the results directory at ${{ steps.tox-results.outputs.results-dir }}
     if: always()
-    run: |
-      from shutil import rmtree
-      from pathlib import Path
-
-      results_dir = Path('${{ steps.tox-results.outputs.results-dir }}')
-      group_name = f'Cleaning up the `{results_dir!s}` results directory...'
-
-      print(f'::group::{group_name}')
-      try:
-          rmtree(results_dir)
-      except:
-          print('❌ Failure :(')
-      else:
-          print('🔥 Success!')
-      finally:
-          print('::endgroup::')
-    shell: python
+    env:
+      PYTHONPATH: ${{ github.action_path }}/src
+    run: >-
+      python -m cleanup_tox_results_dir
+      '${{ steps.tox-results.outputs.results-dir }}'
+    shell: bash
   - name: Log results
     if: always()
     env:
