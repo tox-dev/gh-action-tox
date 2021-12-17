@@ -40,29 +40,34 @@ outputs:
 runs:
   using: composite
   steps:
-  - name: >-
-      Set the active Python interpeter to ${{ inputs.python-version }}
-      from GitHub-provided repositories
-    if: >-
-      (
-        !(
-          fromJSON(inputs.deadsnakes)
-          || endsWith(inputs.python-version, '-dev')
-        )
-        || runner.os != 'Linux'
-      )
-    uses: actions/setup-python@v2
-    with:
-      python-version: ${{ inputs.python-version }}
-  - name:
-      Set the active Python interpeter to ${{ inputs.python-version }}
-      from the deadsnakes Ubuntu PPA repositories
+  - name: Determine whether the use of deadsnakes PPA has been requested
+    id: deadsnakes
     if: >-
       (
         fromJSON(inputs.deadsnakes)
         || endsWith(inputs.python-version, '-dev')
       )
       && runner.os == 'Linux'
+    run: >-
+      echo '::set-output name=requested::true'
+    shell: bash
+  - name: Set up outer pip settings
+    id: pip-settings
+    if: steps.deadsnakes.outputs.requested != 'true'
+    run: >-
+      echo '::set-output name=global-args::--user'
+    shell: bash
+  - name: >-
+      Set the active Python interpeter to ${{ inputs.python-version }}
+      from GitHub-provided repositories
+    if: steps.deadsnakes.outputs.requested != 'true'
+    uses: actions/setup-python@v2
+    with:
+      python-version: ${{ inputs.python-version }}
+  - name:
+      Set the active Python interpeter to ${{ inputs.python-version }}
+      from the deadsnakes Ubuntu PPA repositories
+    if: steps.deadsnakes.outputs.requested == 'true'
     uses: deadsnakes/action@v2.1.1
     with:
       python-version: ${{ inputs.python-version }}
@@ -70,15 +75,19 @@ runs:
   - name: Install packaging tools
     run: |
       echo '::group::Preparing the outer Python env for tox'
-      python -m pip install --user -U wheel
-      python -m pip install --user -U pip-with-requires-python setuptools
-      python -m pip install --user -U virtualenv
+      python -m pip install ${{ steps.pip-settings.outputs.global-args }} -U \
+        wheel
+      python -m pip install ${{ steps.pip-settings.outputs.global-args }} -U \
+        pip-with-requires-python setuptools
+      python -m pip install ${{ steps.pip-settings.outputs.global-args }} -U \
+        virtualenv
       echo '::endgroup::'
     shell: bash
   - name: Install tox
     run: |
       echo '::group::Installing tox: ${{ inputs.version }}'
-      python -m pip install --user -U '${{ inputs.version }}'
+      python -m pip install ${{ steps.pip-settings.outputs.global-args }} -U \
+        '${{ inputs.version }}'
       echo '::endgroup::'
     shell: bash
   - uses: actions/checkout@v2
