@@ -43,7 +43,7 @@ runs:
   - name: Set up Windows console to use UTF-8
     if: runner.os == 'Windows'
     run: chcp 65001
-    shell: bash
+    shell: cmd
   - name: Determine whether the use of deadsnakes PPA has been requested
     id: deadsnakes
     if: >-
