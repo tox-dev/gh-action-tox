@@ -112,21 +112,9 @@ runs:
       TOXENV: ${{ inputs.target }}
   - name: Prepare tox results directory for '${{ inputs.target }}'
     id: tox-results
-    run: >
-      echo '::group::Preparing tox results storage...'
-
-
-      TMPDIR=$(
-        mktemp -d --suffix=-results "${GITHUB_ACTION_PATH}/tox-XXXXX"
-      )
-      && echo "::set-output name=results-dir::${TMPDIR}"
-
-
-      JSON_RESULTS_FILE="${TMPDIR}/.tox-run-results.json"
-      && echo "::set-output name=results-file::${JSON_RESULTS_FILE}"
-
-
-      echo '::endgroup::'
+    env:
+      PYTHONPATH: ${{ github.action_path }}/src
+    run: python -m make_tmp_dir '${{ github.action_path }}'
     shell: bash
   - name: Run tox env '${{ inputs.target }}'
     run: >
