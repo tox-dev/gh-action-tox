@@ -40,10 +40,6 @@ outputs:
 runs:
   using: composite
   steps:
-  - name: Set up Windows console to use UTF-8
-    if: runner.os == 'Windows'
-    run: chcp 65001
-    shell: cmd
   - name: Determine whether the use of deadsnakes PPA has been requested
     id: deadsnakes
     if: >-
@@ -147,6 +143,8 @@ runs:
     if: always()
     id: json-results
     env:
+      PYTHONIOENCODING: utf-8
+      PYTHONLEGACYWINDOWSSTDIO: utf-8
       PYTHONPATH: ${{ github.action_path }}/src
     run: >-
       python -m save_tox_results_as_output
