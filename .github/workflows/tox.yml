@@ -114,12 +114,13 @@ jobs:
   run-tox:
     name: >-
       ${{ inputs.tox-job-names-prefix }}
-      ${{ matrix.custom-job-name && matrix.custom-job-name  || matrix.toxenv }}
+      ${{ matrix.custom-job-name && matrix.custom-job-name || matrix.toxenv }}
+      ${{ matrix.runs-on && matrix.runs-on || 'Ubuntu-latest' }}
 
     needs:
     - make-tox-env-matrix
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runs-on && matrix.runs-on || 'Ubuntu-latest' }}
 
     strategy:
       matrix: ${{ fromJSON(needs.make-tox-env-matrix.outputs.matrix) }}
