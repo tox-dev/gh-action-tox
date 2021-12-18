@@ -3,6 +3,8 @@
 # IMPORTANT: This module runs under a variaty of Python versions and
 # IMPORTANT: must keep supporting Python 2.7+ syntax.
 
+from __future__ import print_function
+
 import os
 import sys
 import tempfile
