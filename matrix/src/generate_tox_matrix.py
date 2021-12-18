@@ -58,7 +58,7 @@ for vm, toxenv in itertools.product(VM_LIST, toxenvs):
     )
     envs.append({
         'python-version': '.'.join(py_ver),
-        'runs-on': vm,
+        'runs-on': '{vm}-latest',
         'toxenv': toxenv,
     })
 
