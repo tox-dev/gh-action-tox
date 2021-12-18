@@ -1,7 +1,11 @@
+import itertools
 import json
 import re
 import subprocess
 import sys
+
+
+VM_LIST = 'macOS', 'Ubuntu', 'Windows'
 
 
 print('::group::Generating GHA environments based on tox config')
@@ -39,7 +43,7 @@ if {'py', 'python'} & toxenvs:
         toxenvs |= {f'py{py_ver[0]}{py_ver[1]}'}
 
 envs = []
-for toxenv in toxenvs:
+for vm, toxenv in itertools.product(VM_LIST, toxenvs):
     if filter_pattern and not re.search(filter_pattern, toxenv):
         print(
             f'`{toxenv}` does not march `{filter_pattern}`. '
@@ -54,6 +58,7 @@ for toxenv in toxenvs:
     )
     envs.append({
         'python-version': '.'.join(py_ver),
+        'runs-on': vm,
         'toxenv': toxenv,
     })
 
