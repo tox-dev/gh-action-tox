@@ -11,7 +11,7 @@ VM_LIST = 'macOS', 'Ubuntu', 'Windows'
 print('::group::Generating GHA environments based on tox config')
 filter_pattern = sys.argv[1]
 
-min_py_ver, max_py_ver = sys.argv[2:3]
+min_py_ver, max_py_ver = sys.argv[2:4]
 if min_py_ver is not None:
     min_py_ver = tuple(map(int, min_py_ver.split('.')))
 else:
