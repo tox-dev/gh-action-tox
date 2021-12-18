@@ -12,11 +12,11 @@ print('::group::Generating GHA environments based on tox config')
 filter_pattern = sys.argv[1]
 
 min_py_ver, max_py_ver = sys.argv[2:4]
-if min_py_ver is not None:
+if min_py_ver:
     min_py_ver = tuple(map(int, min_py_ver.split('.')))
 else:
     min_py_ver = 2, 7
-if max_py_ver is not None:
+if max_py_ver:
     max_py_ver = tuple(map(int, max_py_ver.split('.')))
 else:
     max_py_ver = 3, 10

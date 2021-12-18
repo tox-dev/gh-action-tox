@@ -16,11 +16,11 @@ inputs:
     required: false
 
   min-python:
-    default: 'None'
+    default:
     description: Minimum supported Python version (quote as a string!)
     required: false
   max-python:
-    default: 'None'
+    default:
     description: Maximum supported Python version (quote as a string!)
     required: false
 
