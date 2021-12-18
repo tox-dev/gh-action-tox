@@ -60,11 +60,6 @@ runs:
       PY_COLORS: 1
       TOX_PARALLEL_NO_SPINNER: 1
     run: |
-      from __future__ import print_function
-
-      __metaclass__ = type
-
-
       import json
       import re
       import subprocess
@@ -104,18 +99,18 @@ runs:
       if {'py', 'python'} & toxenvs:
           toxenvs -= {'py', 'python'}
           for py_ver in generate_py_vers(min_py_ver, max_py_ver):
-              toxenvs |= {'py{ver[0]}{ver[1]}'.format(ver=py_ver)}
+              toxenvs |= {f'py{py_ver[0]}{py_ver[1]}'}
 
       envs = []
       for toxenv in toxenvs:
           if filter_pattern and not re.search(filter_pattern, toxenv):
               print(
-                  '`{env}` does not march `{pattern}`. Excluding it...'.
-                  format(env=toxenv, pattern=filter_pattern),
+                  f'`{toxenv}` does not march `{filter_pattern}`. '
+                  'Excluding it...',
               )
               continue
 
-          print('Adding `{env}` to the list'.format(env=toxenv))
+          print(f'Adding `{toxenv}` to the list')
           py_ver = (
               (toxenv[2], toxenv[3:]) if toxenv.startswith('py')
               else max_py_ver
@@ -126,10 +121,7 @@ runs:
           })
 
       matrix_json_string = json.dumps({'include': envs})
-      print(
-          '::set-output name=matrix::{out_json}'.
-          format(out_json=matrix_json_string),
-      )
+      print(f'::set-output name=matrix::{matrix_json_string}')
       print('::endgroup::')
     shell: python
 ...
