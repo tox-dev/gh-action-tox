@@ -143,8 +143,6 @@ runs:
     if: always()
     id: json-results
     env:
-      PYTHONIOENCODING: utf-8
-      PYTHONLEGACYWINDOWSSTDIO: utf-8
       PYTHONPATH: ${{ github.action_path }}/src
     run: >-
       python -m save_tox_results_as_output
@@ -156,6 +154,8 @@ runs:
       Clean-up the results directory at ${{ steps.tox-results.outputs.results-dir }}
     if: always()
     env:
+      PYTHONIOENCODING: utf-8
+      PYTHONLEGACYWINDOWSSTDIO: utf-8
       PYTHONPATH: ${{ github.action_path }}/src
     run: >-
       python -m cleanup_tox_results_dir
