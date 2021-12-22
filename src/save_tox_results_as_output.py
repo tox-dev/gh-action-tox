@@ -14,7 +14,8 @@ urlencoded_tox_results = (
     compact_tox_results.
     replace('%', '%25').
     replace('\r', '%0D').
-    replace('\n', '%0A')
+    replace('\n', '%0A').
+    replace('\\', r'\\')
 )
 
 print(f'::set-output name=json-results::{urlencoded_tox_results}')
