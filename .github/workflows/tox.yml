@@ -135,12 +135,16 @@ jobs:
       id: tox
     - uses: actions/setup-python@v2
       if: always()
+      id: use-py310
       with:
         python-version: >-
           3.10
     - name: j res
       if: always()
-      run: echo '${{ steps.tox.outputs.json-results }}' | python3.10 -m json.tool
+      run: >-
+        echo '${{ steps.tox.outputs.json-results }}'
+        |
+        ${{ steps.use-py310.outputs.python-version }} -m json.tool
       shell: bash  # Windows compat
 
 
