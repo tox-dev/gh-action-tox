@@ -54,6 +54,9 @@ on:
         required: false
         type: string
 
+    outputs:
+      json-results: ${{ jobs.run-tox.outputs.json-results }}
+
     secrets: {}
 
 jobs:
@@ -119,6 +122,9 @@ jobs:
 
     needs:
     - make-tox-env-matrix
+
+    outputs:
+      json-results: ${{ steps.tox.outputs.json-results }}
 
     runs-on: ${{ matrix.runs-on && matrix.runs-on || 'Ubuntu-latest' }}
 
