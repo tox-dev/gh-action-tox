@@ -55,6 +55,10 @@ on:
         type: string
 
     outputs:
+      # NOTE: This doesn't actually work well because for jobs with the matrix
+      # NOTE: strategy chosen, it retrieves the output from one of them instead
+      # NOTE: of returning results from each job. Ref:
+      # https://github.community/t/bug-jobs-output-should-return-a-list-for-a-matrix-job/128626
       json-results:
         description: JSON results of all the matrix jobs produced by tox
         value: ${{ jobs.run-tox.outputs.json-results }}
