@@ -140,7 +140,14 @@ jobs:
           3.10
     - name: j res
       if: always()
-      run: echo '${{ steps.tox.outputs.json-results }}' | python3.10 -m json.tool
+      run: >-
+        echo '${{ steps.tox.outputs.json-results }}'
+        |
+        ${{
+          runner.os == 'Windows'
+          && 'py -3.10'
+          || 'python3.10'
+        }} -m json.tool
       shell: bash  # Windows compat
 
 
