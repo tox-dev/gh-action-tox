@@ -55,7 +55,9 @@ on:
         type: string
 
     outputs:
-      json-results: ${{ jobs.run-tox.outputs.json-results }}
+      json-results:
+        description: JSON results of all the matrix jobs produced by tox
+        value: ${{ jobs.run-tox.outputs.json-results }}
 
     secrets: {}
 
