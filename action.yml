@@ -64,6 +64,9 @@ runs:
     uses: actions/setup-python@v2
     with:
       python-version: ${{ inputs.python-version }}
+    env:
+      PIP_DISABLE_PIP_VERSION_CHECK: 1
+      PIP_NO_PYTHON_VERSION_WARNING: 1
   - name:
       Set the active Python interpeter to ${{ inputs.python-version }}
       from the deadsnakes Ubuntu PPA repositories
@@ -73,6 +76,9 @@ runs:
       python-version: ${{ inputs.python-version }}
   # TODO: integrate bindep?
   - name: Install packaging tools
+    env:
+      PIP_DISABLE_PIP_VERSION_CHECK: 1
+      PIP_NO_PYTHON_VERSION_WARNING: 1
     run: |
       echo '::group::Preparing the outer Python env for tox'
       python -m pip install ${{ steps.pip-settings.outputs.global-args }} -U \
@@ -84,6 +90,9 @@ runs:
       echo '::endgroup::'
     shell: bash
   - name: Install tox
+    env:
+      PIP_DISABLE_PIP_VERSION_CHECK: 1
+      PIP_NO_PYTHON_VERSION_WARNING: 1
     run: |
       echo '::group::Installing tox: ${{ inputs.version }}'
       python -m pip install ${{ steps.pip-settings.outputs.global-args }} -U \
@@ -107,6 +116,8 @@ runs:
       echo '::endgroup::'
     shell: bash
     env:
+      PIP_DISABLE_PIP_VERSION_CHECK: 1
+      PIP_NO_PYTHON_VERSION_WARNING: 1
       PY_COLORS: 1
       TOX_PARALLEL_NO_SPINNER: 1
       TOXENV: ${{ inputs.target }}
