@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 
+import enum
 import itertools
 import json
 import re
@@ -7,27 +8,39 @@ import subprocess
 import sys
 
 
-VM_LIST = {
-    'macOS': (
-        '11',  # latest
+class os(enum.Enum):
+    macos = 'macOS'
+    ubuntu = 'Ubuntu'
+    windows = 'Windows'
+
+
+VM_LATEST_MAP = {
+    os.macos: '11',
+    os.ubuntu: '20.04',
+    os.windows: '2019',
+}
+
+VM_VERSIONS = {
+    os.macos: (
+        VM_LATEST_MAP[os.macos],
         '10.15',
     ),
-    'Ubuntu': (
-        '20.04',  # latest
+    os.ubuntu: (
+        VM_LATEST_MAP[os.ubuntu],
         '18.04',
     ),
-    'Windows': (
+    os.windows: (
         '2022',
-        '2019',  # latest
+        VM_LATEST_MAP[os.windows],
         '2016',
     ),
 }
 
-VM_NAMES = [
-    f'{os}-{version}'
-    for os, versions in VM_LIST.items()
+VM_NAMES = tuple(
+    f'{os.value}-{version}'
+    for os, versions in VM_VERSIONS.items()
     for version in versions
-]
+)
 
 
 print('::group::Generating GHA environments based on tox config')
