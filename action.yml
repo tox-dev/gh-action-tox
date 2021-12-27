@@ -32,8 +32,6 @@ inputs:
     required: false
 
 outputs:
-  matrix:
-    value: ${{ steps.tox-matrix.outputs.matrix }}
   json-results:
     value: ${{ steps.json-results.outputs.json-results }}
 
