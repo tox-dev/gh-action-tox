@@ -97,20 +97,12 @@ jobs:
     runs-on: Ubuntu-latest
 
     steps:
-    - name: Retrieve the project source from the repository
-      if: >-
-        !inputs.workflow-artifact-name
-      uses: actions/checkout@v2
-    - name: Retrieve the project source from an sdist inside the GHA artifact
-      if: inputs.workflow-artifact-name
-      uses: re-actors/checkout-python-sdist@main
-      with:
-        source-tarball-name: ${{ inputs.source-tarball-name }}
-        workflow-artifact-name: ${{ inputs.workflow-artifact-name }}
-
     - name: 🔎 Produce tox environment job matrix for GHA
       uses: tox-dev/gh-action-tox/matrix@experiments/composite-action
       id: discovered-tox
+      with:
+        source-tarball-name: ${{ inputs.source-tarball-name }}
+        workflow-artifact-name: ${{ inputs.workflow-artifact-name }}
 
     - name: Log the discovered matrix
       run: echo '${{ steps.discovered-tox.outputs.matrix }}'
@@ -166,6 +158,8 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         target: ${{ matrix.toxenv }}
+        source-tarball-name: ${{ inputs.source-tarball-name }}
+        workflow-artifact-name: ${{ inputs.workflow-artifact-name }}
       id: tox
     - uses: actions/setup-python@v2
       if: always()
