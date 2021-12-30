@@ -14,6 +14,19 @@ inputs:
     default:
     description: Regex to filter the tox envs
     required: false
+  workflow-artifact-name:
+    default:
+    description: >-
+      If set, is used the produced dists are made accessible to the
+      later jobs under this name (defaults to unset)
+    required: false
+  source-tarball-name:
+    default: >-
+      *.tar.gz
+    description: >-
+      A glob for the built source distribution in the artifact
+      to retrieve the project from (defaults to `*.tar.gz`)
+    required: false
 
   min-python:
     default:
@@ -54,6 +67,18 @@ runs:
       python -m pip install --user -U '${{ inputs.version }}'
       echo '::endgroup::'
     shell: bash
+
+  - name: Retrieve the project source from the repository
+    if: >-
+      !inputs.workflow-artifact-name
+    uses: actions/checkout@v2
+  - name: Retrieve the project source from an sdist inside the GHA artifact
+    if: inputs.workflow-artifact-name
+    uses: re-actors/checkout-python-sdist@main
+    with:
+      source-tarball-name: ${{ inputs.source-tarball-name }}
+      workflow-artifact-name: ${{ inputs.workflow-artifact-name }}
+
   - name: Generate the matrix
     id: tox-matrix
     env:
