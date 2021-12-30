@@ -28,6 +28,21 @@ on:
         description: Regex to filter the tox envs
         required: false
         type: string
+      workflow-artifact-name:
+        default:
+        description: >-
+          If set, is used the produced dists are made accessible to the
+          later jobs under this name (defaults to unset)
+        required: false
+        type: string
+      source-tarball-name:
+        default: >-
+          *.tar.gz
+        description: >-
+          A glob for the built source distribution in the artifact
+          to retrieve the project from (defaults to `*.tar.gz`)
+        required: false
+        type: string
 
       min-python:
         default: 'None'
@@ -82,9 +97,16 @@ jobs:
     runs-on: Ubuntu-latest
 
     steps:
-    # NOTE: Check out the caller repository under $GITHUB_WORKSPACE,
-    # NOTE: so the job can access it.
-    - uses: actions/checkout@v2
+    - name: Retrieve the project source from the repository
+      if: >-
+        !inputs.workflow-artifact-name
+      uses: actions/checkout@v2
+    - name: Retrieve the project source from an sdist inside the GHA artifact
+      if: inputs.workflow-artifact-name
+      uses: re-actors/checkout-python-sdist@main
+      with:
+        source-tarball-name: ${{ inputs.source-tarball-name }}
+        workflow-artifact-name: ${{ inputs.workflow-artifact-name }}
 
     - name: 🔎 Produce tox environment job matrix for GHA
       uses: tox-dev/gh-action-tox/matrix@experiments/composite-action
