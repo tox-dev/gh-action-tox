@@ -42,7 +42,7 @@ VM_NAMES = tuple(
 )
 
 INCOMPATIBLE_PYTHONS = {
-    f'{os.ubuntu.value}-22.04': {'3.5', '2.7'},
+    f'{os.ubuntu.value}-22.04': {'3.6', '3.5', '2.7'},
 }
 
 
