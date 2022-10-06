@@ -163,6 +163,7 @@ jobs:
       id: tox
     - uses: actions/setup-python@v4
       if: always()
+      id: python-install
       with:
         python-version: >-
           3.10
@@ -171,11 +172,7 @@ jobs:
       run: >-
         echo '${{ steps.tox.outputs.json-results }}'
         |
-        ${{
-          runner.os == 'Windows'
-          && 'py -3.10'
-          || 'python3.10'
-        }} -m json.tool
+        ${{ steps.python-install.outputs.python-version }} -m json.tool
       shell: bash  # Windows compat
 
 
