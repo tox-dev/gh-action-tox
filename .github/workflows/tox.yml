@@ -179,6 +179,7 @@ jobs:
       shell: bash  # Windows compat
 
 
+  # https://github.com/marketplace/actions/alls-green#why
   check-tox:  # This job does nothing and is only used for the branch protection
     if: always()
 
