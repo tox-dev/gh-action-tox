@@ -17,22 +17,21 @@ class os(enum.Enum):
 VM_LATEST_MAP = {
     os.macos: '11',
     os.ubuntu: '20.04',
-    os.windows: '2019',
+    os.windows: '2022',
 }
 
 VM_VERSIONS = {
     os.macos: (
         VM_LATEST_MAP[os.macos],
-        '10.15',
+        '12',
     ),
     os.ubuntu: (
         VM_LATEST_MAP[os.ubuntu],
-        '18.04',
+        '22.04',
     ),
     os.windows: (
-        '2022',
+        '2019',
         VM_LATEST_MAP[os.windows],
-        '2016',
     ),
 }
 
