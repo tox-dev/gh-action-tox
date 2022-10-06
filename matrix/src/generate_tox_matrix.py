@@ -89,7 +89,6 @@ for vm, toxenv in itertools.product(VM_NAMES, toxenvs):
         )
         continue
 
-    print(f'Adding `{toxenv}` to the list')
     py_ver = (
         (toxenv[2], toxenv[3:]) if toxenv.startswith('py')
         else max_py_ver
@@ -99,6 +98,7 @@ for vm, toxenv in itertools.product(VM_NAMES, toxenvs):
     if py_ver_str in INCOMPATIBLE_PYTHONS.get(vm, {}):
         continue
 
+    print(f'Adding `{toxenv}` via `{py_ver_str}` @ `{vm}` to the list')
     envs.append({
         'python-version': py_ver_str,
         'runs-on': vm,
