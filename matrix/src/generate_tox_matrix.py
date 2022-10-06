@@ -80,6 +80,8 @@ if {'py', 'python'} & toxenvs:
     for py_ver in generate_py_vers(min_py_ver, max_py_ver):
         toxenvs |= {f'py{py_ver[0]}{py_ver[1]}'}
 
+print(f'Incompatible Pythons: {INCOMPATIBLE_PYTHONS!r}')
+
 envs = []
 for vm, toxenv in itertools.product(VM_NAMES, toxenvs):
     if filter_pattern and not re.search(filter_pattern, toxenv):
