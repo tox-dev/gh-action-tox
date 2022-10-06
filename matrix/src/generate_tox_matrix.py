@@ -41,6 +41,10 @@ VM_NAMES = tuple(
     for version in versions
 )
 
+INCOMPATIBLE_PYTHONS = {
+    f'{os.ubuntu}-22.04': {'3.5', '2.7'},
+}
+
 
 print('::group::Generating GHA environments based on tox config')
 filter_pattern = sys.argv[1]
@@ -90,8 +94,13 @@ for vm, toxenv in itertools.product(VM_NAMES, toxenvs):
         (toxenv[2], toxenv[3:]) if toxenv.startswith('py')
         else max_py_ver
     )
+
+    py_ver_str = '.'.join(py_ver)
+    if py_ver_str in INCOMPATIBLE_PYTHONS.get(vm, {}):
+        continue
+
     envs.append({
-        'python-version': '.'.join(py_ver),
+        'python-version': py_ver_str,
         'runs-on': vm,
         'toxenv': toxenv,
     })
