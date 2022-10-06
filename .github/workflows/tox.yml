@@ -170,9 +170,9 @@ jobs:
     - name: j res
       if: always()
       run: >-
-        echo '${{ steps.tox.outputs.json-results }}'
-        |
-        ${{ steps.python-install.outputs.python-path }} -m json.tool
+        ${{ steps.python-install.outputs.python-path }} -m
+        json.tool
+        '${{ steps.tox.outputs.json-results-file }}'
 
 
   # https://github.com/marketplace/actions/alls-green#why
