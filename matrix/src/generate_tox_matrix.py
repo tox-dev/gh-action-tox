@@ -84,7 +84,7 @@ envs = []
 for vm, toxenv in itertools.product(VM_NAMES, toxenvs):
     if filter_pattern and not re.search(filter_pattern, toxenv):
         print(
-            f'`{toxenv}` does not march `{filter_pattern}`. '
+            f'`{toxenv}` does not match `{filter_pattern}`. '
             'Excluding it...',
         )
         continue
