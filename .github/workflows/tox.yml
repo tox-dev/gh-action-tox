@@ -109,7 +109,7 @@ jobs:
 
     - name: Select Python 3.10
       if: inputs.tox-env-matrix-hook
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: >-
           3.10
@@ -161,7 +161,7 @@ jobs:
         source-tarball-name: ${{ inputs.source-tarball-name }}
         workflow-artifact-name: ${{ inputs.workflow-artifact-name }}
       id: tox
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v4
       if: always()
       with:
         python-version: >-
