@@ -173,7 +173,6 @@ jobs:
         echo '${{ steps.tox.outputs.json-results }}'
         |
         ${{ steps.python-install.outputs.python-path }} -m json.tool
-      shell: bash  # Windows compat
 
 
   # https://github.com/marketplace/actions/alls-green#why
