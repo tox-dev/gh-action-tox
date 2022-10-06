@@ -95,7 +95,13 @@ for vm, toxenv in itertools.product(VM_NAMES, toxenvs):
     )
 
     py_ver_str = '.'.join(py_ver)
-    if py_ver_str in INCOMPATIBLE_PYTHONS.get(vm, {}):
+    print(f'Checking if `{py_ver_str}` is compatible with `{vm}`...')
+    print(f'`{vm}` incompatibilities are: {INCOMPATIBLE_PYTHONS.get(vm)!r}')
+    if py_ver_str in INCOMPATIBLE_PYTHONS.get(vm, set()):
+        print(
+            f'`{toxenv}` does not match `{filter_pattern}`. '
+            'Excluding it...',
+        )
         continue
 
     print(f'Adding `{toxenv}` via `{py_ver_str}` @ `{vm}` to the list')
