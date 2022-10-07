@@ -52,9 +52,6 @@ with open(github_summary_file_path, mode=FILE_APPEND_MODE) as summary_file:
             format(status_emoji=status_emoji, command_number=command_number),
         )
         summary_file.write('\n')
-        summary_file.write(repr(test_cmd))
-
-        summary_file.write('\n')
         summary_file.write('\n')
 
         test_cmd_out = test_cmd['output']
