@@ -60,8 +60,8 @@ with open(github_summary_file_path, mode=FILE_APPEND_MODE) as summary_file:
         test_cmd_out = test_cmd['output']
         escaped_test_cmd_out = test_cmd_out.replace('\n', '%0A')
 
-        lexed_command = _shlex_join(test_cmd['command']),
-        raw_command = ' '.join(test_cmd['command']),
+        lexed_command = _shlex_join(test_cmd['command'])
+        raw_command = ' '.join(test_cmd['command'])
 
         summary_file.write('<details>')
         summary_file.write('\n')
