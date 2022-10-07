@@ -33,7 +33,7 @@ test_commands = toxenv_data['test']
 
 with open(github_summary_file_path, mode=FILE_APPEND_MODE) as summary_file:
     summary_file.write(
-        '# {status_emoji} Tox run result'.
+        '# {status_emoji} Tox run results'.
         format(
             status_emoji='❌' if any(cmd['retcode'] for cmd in test_commands)
             else '✓',
