@@ -76,7 +76,14 @@ with open(github_summary_file_path, mode=FILE_APPEND_MODE) as summary_file:
         summary_file.write('\n')
         summary_file.write('```console')
         summary_file.write('\n')
-        summary_file.write(test_cmd_out)
+        summary_file.write(
+            '({rc}) $ {cmd}\n{out}'.
+            format(
+                rc=rc,
+                cmd=lexed_command,
+                out=test_cmd_out,
+            )
+        )
         summary_file.write('\n')
         summary_file.write('```')
         summary_file.write('\n')
