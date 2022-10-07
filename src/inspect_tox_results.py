@@ -4,6 +4,14 @@ import json
 import os
 import sys
 from pprint import pprint
+try:
+    from shlex import join as _shlex_join  # Python 3.8+
+except ImportError:
+    # Vendored from
+    # https://github.com/python/cpython/blob/e500cc0/Lib/shlex.py#L316-L318
+    def _shlex_join(split_command):
+        """Return a shell-escaped string from *split_command*."""
+        return ' '.join(quote(arg) for arg in split_command)
 
 
 FILE_APPEND_MODE = 'a'
@@ -24,9 +32,23 @@ toxenv_data = tox_results['testenvs'][toxenv_name]
 test_commands = toxenv_data['test']
 
 with open(github_summary_file_path, mode=FILE_APPEND_MODE) as summary_file:
-    for test_cmd in test_commands:
+    summary_file.write(
+        '# {status_emoji} Tox run result'.
+        format(
+            status_emoji='❌' if any(cmd.rc for cmd in test_commands)
+            else '✓',
+        ),
+    )
+    for command_number, test_cmd in enumerate(test_commands):
         pprint(test_cmd)
-        summary_file.write('# Tox run command result')
+
+        rc = test_cmd['retcode']
+        status_emoji='❌' if rc else '✓'
+
+        summary_file.write(
+            '## {status_emoji} Tox command #{command_number} result'.
+            format(status_emoji=status_emoji, command_number=command_number),
+        )
         summary_file.write('\n')
         summary_file.write(repr(test_cmd))
 
@@ -36,48 +58,27 @@ with open(github_summary_file_path, mode=FILE_APPEND_MODE) as summary_file:
         test_cmd_out = test_cmd['output']
         escaped_test_cmd_out = test_cmd_out.replace('\n', '%0A')
 
-        rc = test_cmd['retcode']
-        if rc:
-            print(
-                '::error file=({rc}) $ {cmd}::{out}'.
-                format(
-                    rc=rc,
-                    cmd=' '.join(test_cmd['command']),
-                    out=escaped_test_cmd_out,
-                )
-            )
+        lexed_command = _shlex_join(test_cmd['command']),
+        raw_command = ' '.join(test_cmd['command']),
 
-            summary_file.write('```console')
-            summary_file.write('\n')
-            summary_file.write(
-                '({rc}) $ {cmd}\n{out}'.
-                format(
-                    rc=rc,
-                    cmd=' '.join(test_cmd['command']),
-                    out=test_cmd_out,
-                )
-            )
-            summary_file.write('\n')
-            summary_file.write('```')
-            summary_file.write('\n')
-            summary_file.write('\n')
-
-            continue
-
-        print(
-            '::debug:({rc}) $ {cmd}'.
-            format(rc=rc, cmd=' '.join(test_cmd['command']))
+        summary_file.write('<details>')
+        summary_file.write('\n')
+        summary_file.write('\n')
+        summary_file.write('<summary>')
+        summary_file.write(
+            '{status_emoji} <code>({rc}) $ <kbd>{cmd}</kbd></code>'.
+            format(status_emoji=status_emoji, rc=rc, cmd=lexed_command),
         )
-        print(f'::debug:{test_cmd_out}')
-        print('::debug:{out}'.format(out=escaped_test_cmd_out))
-
+        summary_file.write('</summary>')
+        summary_file.write('\n')
+        summary_file.write('\n')
         summary_file.write('```console')
         summary_file.write('\n')
         summary_file.write(
             '({rc}) $ {cmd}\n{out}'.
             format(
                 rc=rc,
-                cmd=' '.join(test_cmd['command']),
+                cmd=lexed_command,
                 out=test_cmd_out,
             )
         )
@@ -85,3 +86,23 @@ with open(github_summary_file_path, mode=FILE_APPEND_MODE) as summary_file:
         summary_file.write('```')
         summary_file.write('\n')
         summary_file.write('\n')
+        summary_file.write('</details>')
+        summary_file.write('\n')
+        summary_file.write('\n')
+
+        if rc:
+            print(
+                '::error file=({rc}) $ {cmd}::{out}'.
+                format(
+                    rc=rc,
+                    cmd=raw_command,
+                    out=escaped_test_cmd_out,
+                )
+            )
+            continue
+
+        print(
+            '::debug:({rc}) $ {cmd}'.
+            format(rc=rc, cmd=raw_command)
+        )
+        print('::debug:{out}'.format(out=escaped_test_cmd_out))
