@@ -35,7 +35,7 @@ with open(github_summary_file_path, mode=FILE_APPEND_MODE) as summary_file:
     summary_file.write(
         '# {status_emoji} Tox run result'.
         format(
-            status_emoji='❌' if any(cmd.rc for cmd in test_commands)
+            status_emoji='❌' if any(cmd['rc'] for cmd in test_commands)
             else '✓',
         ),
     )
