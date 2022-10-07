@@ -28,7 +28,7 @@ with open(github_summary_file_path, mode=FILE_APPEND_MODE) as summary_file:
         pprint(test_cmd)
         summary_file.write('# Tox run command result')
         summary_file.write('\n')
-        summary_file.write(test_cmd)
+        summary_file.write(repr(test_cmd))
 
         summary_file.write('\n')
         summary_file.write('\n')
