@@ -8,8 +8,11 @@ print('::group::Printing json results...')
 
 results_json_string = sys.argv[1].strip().replace('\n', '%0A')
 toxenv_name = sys.argv[2].strip()
+tox_results_file = sys.argv[3]
 
 tox_results = json.loads(results_json_string)
+with open(tox_results_file, 'r') as tox_results_fd:
+    tox_results = json.load(tox_results_fd)
 toxenv_data = tox_results['testenvs'][toxenv_name]
 test_commands = toxenv_data['test']
 
