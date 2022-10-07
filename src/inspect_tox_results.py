@@ -39,6 +39,8 @@ with open(github_summary_file_path, mode=FILE_APPEND_MODE) as summary_file:
             else '✓',
         ),
     )
+    summary_file.write('\n')
+    summary_file.write('\n')
     for command_number, test_cmd in enumerate(test_commands):
         pprint(test_cmd)
 
