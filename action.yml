@@ -211,7 +211,7 @@ runs:
         ${{ matrix.toxenv }}
       EOM
       )"
-      '${{ steps.tox-results.outputs.results-file }}'
+      "${{ steps.tox-results.outputs.results-file }}"
     shell: bash
   - name: Reset the active Python interpeter to ${{ inputs.python-version }}
     uses: actions/setup-python@v2
