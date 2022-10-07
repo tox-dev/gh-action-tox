@@ -69,14 +69,7 @@ on:
         required: false
         type: string
 
-    outputs:
-      # NOTE: This doesn't actually work well because for jobs with the matrix
-      # NOTE: strategy chosen, it retrieves the output from one of them instead
-      # NOTE: of returning results from each job. Ref:
-      # https://github.community/t/bug-jobs-output-should-return-a-list-for-a-matrix-job/128626
-      json-results:
-        description: JSON results of all the matrix jobs produced by tox
-        value: ${{ jobs.run-tox.outputs.json-results }}
+    outputs: {}
 
     secrets: {}
 
@@ -143,9 +136,6 @@ jobs:
     needs:
     - make-tox-env-matrix
 
-    outputs:
-      json-results: ${{ steps.tox.outputs.json-results }}
-
     runs-on: ${{ matrix.runs-on && matrix.runs-on || 'Ubuntu-latest' }}
 
     strategy:
@@ -161,19 +151,6 @@ jobs:
         source-tarball-name: ${{ inputs.source-tarball-name }}
         workflow-artifact-name: ${{ inputs.workflow-artifact-name }}
       id: tox
-    - uses: actions/setup-python@v4
-      if: always()
-      id: python-install
-      with:
-        python-version: >-
-          3.10
-    - name: j res
-      if: always()
-      run: >-
-        ${{ steps.python-install.outputs.python-path }} -m
-        json.tool
-        '${{ steps.tox.outputs.json-results-file }}'
-
 
   # https://github.com/marketplace/actions/alls-green#why
   check-tox:  # This job does nothing and is only used for the branch protection
