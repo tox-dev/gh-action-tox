@@ -1,0 +1,172 @@
+---
+
+name: tox
+
+on:
+  workflow_call:
+    inputs:
+
+      check-job-name:
+        default: ✅ check-tox
+        description: >-
+          A custom job name to use in branch protection,
+          defaults to 'check-tox'
+        required: false
+        type: string
+
+      tox-job-names-prefix:
+        default: >-
+          🧪 tox:
+        description: >-
+          A custom tox matix job names prefix,
+          defaults to '🧪 tox:'
+        required: false
+        type: string
+
+      target:
+        default:
+        description: Regex to filter the tox envs
+        required: false
+        type: string
+      workflow-artifact-name:
+        default:
+        description: >-
+          If set, is used the produced dists are made accessible to the
+          later jobs under this name (defaults to unset)
+        required: false
+        type: string
+      source-tarball-name:
+        default: >-
+          *.tar.gz
+        description: >-
+          A glob for the built source distribution in the artifact
+          to retrieve the project from (defaults to `*.tar.gz`)
+        required: false
+        type: string
+
+      min-python:
+        default: 'None'
+        description: Minimum supported Python version (quote as a string!)
+        required: false
+        type: string
+      max-python:
+        default: 'None'
+        description: Maximum supported Python version (quote as a string!)
+        required: false
+        type: string
+
+      version:
+        default: tox
+        description: tox with version spec for pip
+        required: false
+        type: string
+
+      tox-env-matrix-hook:
+        default:
+        description: >-
+          A Python snippet that can be used to modify the
+          automatically generated job matrix
+        required: false
+        type: string
+
+    outputs: {}
+
+    secrets: {}
+
+jobs:
+
+  make-tox-env-matrix:
+    name: >-
+      🔎 tox: discover envs
+
+    outputs:
+      matrix: >-
+        ${{
+          inputs.tox-env-matrix-hook
+          && steps.post-process-matrix-definition.outputs.matrix
+          || steps.discovered-tox.outputs.matrix
+        }}
+
+    runs-on: Ubuntu-latest
+
+    steps:
+    - name: 🔎 Produce tox environment job matrix for GHA
+      uses: ./matrix
+      id: discovered-tox
+      with:
+        source-tarball-name: ${{ inputs.source-tarball-name }}
+        workflow-artifact-name: ${{ inputs.workflow-artifact-name }}
+
+    - name: Log the discovered matrix
+      run: echo '${{ steps.discovered-tox.outputs.matrix }}'
+
+    - name: Select Python 3.10
+      if: inputs.tox-env-matrix-hook
+      uses: actions/setup-python@v4
+      with:
+        python-version: >-
+          3.10
+
+    - name: Post-process the discovered matrix
+      id: post-process-matrix-definition
+      if: inputs.tox-env-matrix-hook
+      run: |
+        import json
+        computed_matrix = """${{ steps.discovered-tox.outputs.matrix }}"""
+
+        gha_matrix = json.loads(computed_matrix)
+
+        ${{ inputs.tox-env-matrix-hook }}
+
+        final_gha_matrix_compact_str = json.dumps(gha_matrix, indent=None)
+        print(f'::set-output name=matrix::{final_gha_matrix_compact_str}')
+      shell: python
+
+    - name: Log the potentially modified matrix
+      if: inputs.tox-env-matrix-hook
+      run: echo '${{ steps.post-process-matrix-definition.outputs.matrix }}'
+
+
+  run-tox:
+    name: >-
+      ${{ inputs.tox-job-names-prefix }}
+      ${{ matrix.custom-job-name && matrix.custom-job-name || matrix.toxenv }}
+      ${{ matrix.runs-on && matrix.runs-on || 'Ubuntu-latest' }}
+
+    needs:
+    - make-tox-env-matrix
+
+    runs-on: ${{ matrix.runs-on && matrix.runs-on || 'Ubuntu-latest' }}
+
+    strategy:
+      matrix: ${{ fromJSON(needs.make-tox-env-matrix.outputs.matrix) }}
+
+    steps:
+    - name: >-
+        🧪 Run tox: ${{ matrix.toxenv }}
+      uses: ./
+      with:
+        python-version: ${{ matrix.python-version }}
+        target: ${{ matrix.toxenv }}
+        source-tarball-name: ${{ inputs.source-tarball-name }}
+        workflow-artifact-name: ${{ inputs.workflow-artifact-name }}
+      id: tox
+
+  # https://github.com/marketplace/actions/alls-green#why
+  check-tox:  # This job does nothing and is only used for the branch protection
+    if: always()
+
+    name: ${{ inputs.check-job-name }}
+
+    needs:
+    - run-tox
+
+    runs-on: Ubuntu-latest
+
+    steps:
+    - name: Decide whether the needed jobs succeeded or failed
+      uses: re-actors/alls-green@release/v1
+      with:
+        jobs: ${{ toJSON(needs) }}
+
+...
