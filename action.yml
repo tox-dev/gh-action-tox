@@ -161,6 +161,7 @@ runs:
       --parallel auto
       --parallel-live
       -vv
+      --skip-pkg-install
       --result-json '${{ steps.tox-results.outputs.results-file }}'
 
 
